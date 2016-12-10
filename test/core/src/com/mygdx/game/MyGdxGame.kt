@@ -8,6 +8,7 @@ import com.badlogic.gdx.graphics.GL20
 import com.badlogic.gdx.graphics.OrthographicCamera
 import com.badlogic.gdx.graphics.Texture
 import com.badlogic.gdx.graphics.g2d.SpriteBatch
+import com.badlogic.gdx.math.MathUtils
 import com.badlogic.gdx.math.Vector2
 import com.badlogic.gdx.physics.box2d.*
 import com.google.inject.*
@@ -39,6 +40,23 @@ class MyGdxGame : ApplicationAdapter() {
     private fun createEntities() {
         val world = injector.getInstance(World::class.java)
         engine.addEntity(Entity().apply {
+            val border = world.createBody(BodyDef().apply {
+                type = BodyDef.BodyType.StaticBody
+            })
+            border.createFixture(EdgeShape().apply {
+                set(Vector2(0F, 0F), Vector2(20F, 0F))
+            }, 1.0F)
+            border.createFixture(EdgeShape().apply {
+                set(Vector2(20F, 0F), Vector2(20f, 15F))
+            }, 1.0F)
+            border.createFixture(EdgeShape().apply {
+                set(Vector2(0F, 15F), Vector2(20F, 15F))
+            }, 1.0F)
+            border.createFixture(EdgeShape().apply {
+                set(Vector2(0F, 15F), Vector2(0F, 0F))
+            }, 1.0F)
+        })
+        engine.addEntity(Entity().apply {
             add(TextureComponent(p1))
             add(TransformComponent(Vector2(5F, 5F)))
 
@@ -50,6 +68,7 @@ class MyGdxGame : ApplicationAdapter() {
             }, 2.0F)
             p1Body.setTransform(transform.position, 0F)
             add(PhysicsComponent(p1Body))
+            p1Body.setLinearVelocity(5f, 5f)
         })
         engine.addEntity(Entity().apply {
             add(TextureComponent(p2))
@@ -146,9 +165,12 @@ class RenderingSystem @Inject constructor(private val batch: SpriteBatch,
     override fun processEntity(entity: Entity, deltaTime: Float) {
         val img = entity.texture.texture
         val position = entity.transform.position
+        val angle = entity.physics.body.angle
         batch.draw(img,
                 position.x - img.width.pixelsToMeters / 2F, position.y - img.height.pixelsToMeters / 2F,
-                img.width.pixelsToMeters, img.height.pixelsToMeters)
+                img.width.pixelsToMeters / 2F, img.height.pixelsToMeters / 2F, img.width.pixelsToMeters,
+                img.height.pixelsToMeters, 1F, 1F, angle * MathUtils.radiansToDegrees,
+                0, 0, img.width, img.height, false, false)
     }
 }
 
