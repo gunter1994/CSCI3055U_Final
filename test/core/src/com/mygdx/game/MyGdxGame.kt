@@ -15,14 +15,18 @@ import com.google.inject.*
 //most included methods at this point is from youtube series.
 class MyGdxGame : ApplicationAdapter() {
     internal lateinit var batch: SpriteBatch
-    internal lateinit var img: Texture
+    internal lateinit var p1: Texture
+    internal lateinit var p2: Texture
+    internal lateinit var puck: Texture
     internal val engine = Engine()
     private lateinit var injector: Injector
 
     //creates instance of object given a texture.
     override fun create() {
         batch = SpriteBatch()
-        img = Texture("badlogic.jpg")
+        p1 = Texture("player1.png")
+        p2 = Texture("player2.png")
+        puck = Texture("puck.png")
         //injects the object into the game system
         injector  = Guice.createInjector(GameModule(this))
         injector.getInstance(Systems::class.java).list.map { injector.getInstance(it) }.forEach { system ->
@@ -31,21 +35,45 @@ class MyGdxGame : ApplicationAdapter() {
         createEntities()
     }
 
-    //adds entity to game engine, sets up it' texture and transform components
+    //adds entity to game engine, sets up it's texture and transform components
     private fun createEntities() {
         val world = injector.getInstance(World::class.java)
         engine.addEntity(Entity().apply {
-            add(TextureComponent(img))
+            add(TextureComponent(p1))
             add(TransformComponent(Vector2(5F, 5F)))
 
-            val body = world.createBody(BodyDef().apply {
+            val p1Body = world.createBody(BodyDef().apply {
                 type = BodyDef.BodyType.DynamicBody
             })
-            body.createFixture(PolygonShape().apply {
-                setAsBox(img.width.pixelsToMeters / 2F, img.height.pixelsToMeters / 2F)
+            p1Body.createFixture(PolygonShape().apply {
+                setAsBox(p1.width.pixelsToMeters / 2F, p1.height.pixelsToMeters / 2F)
+            }, 2.0F)
+            p1Body.setTransform(transform.position, 0F)
+            add(PhysicsComponent(p1Body))
+        })
+        engine.addEntity(Entity().apply {
+            add(TextureComponent(p2))
+            add(TransformComponent(Vector2(9F, 5F)))
+            val p2Body = world.createBody(BodyDef().apply {
+                type = BodyDef.BodyType.DynamicBody
+            })
+            p2Body.createFixture(PolygonShape().apply {
+                setAsBox(p2.width.pixelsToMeters / 2F, p2.height.pixelsToMeters / 2F)
+            }, 2.0F)
+            p2Body.setTransform(transform.position, 0F)
+            add(PhysicsComponent(p2Body))
+        })
+        engine.addEntity(Entity().apply {
+            add(TextureComponent(puck))
+            add(TransformComponent(Vector2(7F, 5F)))
+            val puckBody = world.createBody(BodyDef().apply {
+                type = BodyDef.BodyType.DynamicBody
+            })
+            puckBody.createFixture(CircleShape().apply {
+                setRadius(puck.width.pixelsToMeters / 2F)
             }, 1.0F)
-            body.setTransform(transform.position, 0F)
-            add(PhysicsComponent(body))
+            puckBody.setTransform(transform.position, 0F)
+            add(PhysicsComponent(puckBody))
         })
     }
 
@@ -59,7 +87,9 @@ class MyGdxGame : ApplicationAdapter() {
     //delets graphics
     override fun dispose() {
         batch.dispose()
-        img.dispose()
+        p1.dispose()
+        p2.dispose()
+        puck.dispose()
     }
 }
 
@@ -157,7 +187,7 @@ class GameModule(private val myGdxGame: MyGdxGame) : Module {
     @Provides @Singleton
     fun world() : World {
         Box2D.init()
-        return World(Vector2(0F, -9.81F), true)
+        return World(Vector2(0F, 0F), true)
     }
 }
 
