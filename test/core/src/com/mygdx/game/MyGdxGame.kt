@@ -9,6 +9,7 @@ import com.badlogic.gdx.graphics.OrthographicCamera
 import com.badlogic.gdx.graphics.Texture
 import com.badlogic.gdx.graphics.g2d.SpriteBatch
 import com.badlogic.gdx.math.Vector2
+import com.badlogic.gdx.physics.box2d.*
 import com.google.inject.*
 
 //most included methods at this point is from youtube series.
@@ -32,9 +33,19 @@ class MyGdxGame : ApplicationAdapter() {
 
     //adds entity to game engine, sets up it' texture and transform components
     private fun createEntities() {
+        val world = injector.getInstance(World::class.java)
         engine.addEntity(Entity().apply {
             add(TextureComponent(img))
-            add(TransformComponent(Vector2(1F, 1F)))
+            add(TransformComponent(Vector2(5F, 5F)))
+
+            val body = world.createBody(BodyDef().apply {
+                type = BodyDef.BodyType.DynamicBody
+            })
+            body.createFixture(PolygonShape().apply {
+                setAsBox(img.width.pixelsToMeters / 2F, img.height.pixelsToMeters / 2F)
+            }, 1.0F)
+            body.setTransform(transform.position, 0F)
+            add(PhysicsComponent(body))
         })
     }
 
@@ -49,6 +60,38 @@ class MyGdxGame : ApplicationAdapter() {
     override fun dispose() {
         batch.dispose()
         img.dispose()
+    }
+}
+
+class PhysicsSynchronizationSystem : IteratingSystem(Family.all(TransformComponent::class.java, PhysicsComponent::class.java).get()) {
+    override fun processEntity(entity: Entity, deltaTime: Float) {
+        entity.transform.position.set(entity.physics.body.position)
+    }
+}
+
+class PhysicsSystem @Inject constructor(private val world: World) : EntitySystem() {
+    private var accumulator = 0F
+    override fun update(deltaTime: Float) {
+        val frameTime = Math.min(deltaTime, 0.25F)
+        accumulator += frameTime
+        while (accumulator >= TIME_STEP) {
+            world.step(TIME_STEP, VELOCITY_ITERATIONS, POSITION_ITERATIONS)
+            accumulator -= TIME_STEP
+        }
+    }
+    companion object {
+        private val TIME_STEP = 1.0F / 300F
+        private val VELOCITY_ITERATIONS = 6
+        private val POSITION_ITERATIONS = 2
+    }
+}
+
+class PhysicsDebugSystem @Inject constructor(private val world: World,
+                                             private val camera: OrthographicCamera) : EntitySystem() {
+    private val renderer = Box2DDebugRenderer()
+
+    override fun update(deltaTime: Float) {
+        renderer.render(world, camera.combined)
     }
 }
 
@@ -73,7 +116,9 @@ class RenderingSystem @Inject constructor(private val batch: SpriteBatch,
     override fun processEntity(entity: Entity, deltaTime: Float) {
         val img = entity.texture.texture
         val position = entity.transform.position
-        batch.draw(img, position.x, position.y, img.width.pixelsToMeters, img.height.pixelsToMeters)
+        batch.draw(img,
+                position.x - img.width.pixelsToMeters / 2F, position.y - img.height.pixelsToMeters / 2F,
+                img.width.pixelsToMeters, img.height.pixelsToMeters)
     }
 }
 
@@ -91,7 +136,10 @@ class GameModule(private val myGdxGame: MyGdxGame) : Module {
     @Provides @Singleton
     fun systems() : Systems {
         return Systems(listOf(
-                RenderingSystem::class.java
+                PhysicsSystem::class.java,
+                PhysicsSynchronizationSystem::class.java,
+                RenderingSystem::class.java,
+                PhysicsDebugSystem::class.java
         ))
     }
 
@@ -104,6 +152,12 @@ class GameModule(private val myGdxGame: MyGdxGame) : Module {
             position.set(viewportWidth / 2F, viewportHeight / 2F, 0F)
             update()
         }
+    }
+
+    @Provides @Singleton
+    fun world() : World {
+        Box2D.init()
+        return World(Vector2(0F, -9.81F), true)
     }
 }
 
