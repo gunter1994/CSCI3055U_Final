@@ -59,21 +59,21 @@ class MyGdxGame : ApplicationAdapter() {
             })
             border.userData = "border"
             border.createFixture(EdgeShape().apply {
-                set(Vector2(0F, 0F), Vector2(20F, 0F))
+                set(Vector2(0F, 0F), Vector2(30F, 0F))
             }, 1.0F)
             border.createFixture(EdgeShape().apply {
-                set(Vector2(20F, 0F), Vector2(20f, 15F))
+                set(Vector2(30F, 0F), Vector2(30f, 20F))
             }, 1.0F)
             border.createFixture(EdgeShape().apply {
-                set(Vector2(0F, 15F), Vector2(20F, 15F))
+                set(Vector2(0F, 20F), Vector2(30F, 20F))
             }, 1.0F)
             border.createFixture(EdgeShape().apply {
-                set(Vector2(0F, 15F), Vector2(0F, 0F))
+                set(Vector2(0F, 20F), Vector2(0F, 0F))
             }, 1.0F)
         })
         engine.addEntity(Entity().apply {
             add(TextureComponent(p1))
-            add(TransformComponent(Vector2(8F, 7.5F)))
+            add(TransformComponent(Vector2(12F, 10F)))
 
             val p1Body = world.createBody(BodyDef().apply {
                 type = BodyDef.BodyType.DynamicBody
@@ -88,7 +88,7 @@ class MyGdxGame : ApplicationAdapter() {
         })
         engine.addEntity(Entity().apply {
             add(TextureComponent(stick))
-            add(TransformComponent(Vector2(8F, 7.5F)))
+            add(TransformComponent(Vector2(12F, 10F)))
 
             val stickBody = world.createBody(BodyDef().apply {
                 type = BodyDef.BodyType.DynamicBody
@@ -114,7 +114,7 @@ class MyGdxGame : ApplicationAdapter() {
         })
         engine.addEntity(Entity().apply {
             add(TextureComponent(p2))
-            add(TransformComponent(Vector2(12F, 7.5F)))
+            add(TransformComponent(Vector2(18F, 10F)))
             val p2Body = world.createBody(BodyDef().apply {
                 type = BodyDef.BodyType.DynamicBody
             })
@@ -128,7 +128,7 @@ class MyGdxGame : ApplicationAdapter() {
         })
         engine.addEntity(Entity().apply {
             add(TextureComponent(stick))
-            add(TransformComponent(Vector2(12F, 7.5F)))
+            add(TransformComponent(Vector2(18F, 10F)))
 
             val stickBody = world.createBody(BodyDef().apply {
                 type = BodyDef.BodyType.DynamicBody
@@ -154,7 +154,7 @@ class MyGdxGame : ApplicationAdapter() {
         })
         engine.addEntity(Entity().apply {
             add(TextureComponent(puck))
-            add(TransformComponent(Vector2(10F, 7.5F)))
+            add(TransformComponent(Vector2(15F, 10F)))
             val puckBody = world.createBody(BodyDef().apply {
                 type = BodyDef.BodyType.DynamicBody
             })
@@ -168,7 +168,7 @@ class MyGdxGame : ApplicationAdapter() {
         })
         engine.addEntity(Entity().apply {
             add(TextureComponent(net1))
-            add(TransformComponent(Vector2(3F, 7.5F)))
+            add(TransformComponent(Vector2(3F, 10F)))
             val netBody = world.createBody(BodyDef().apply {
                 type = BodyDef.BodyType.StaticBody
             })
@@ -180,7 +180,7 @@ class MyGdxGame : ApplicationAdapter() {
             add(PhysicsComponent(netBody))
         })
         engine.addEntity(Entity().apply { //net1 3F, 7.5F net2 17F, 7.5F W: 0.46875 H: 2.34375
-            add(TransformComponent(Vector2(3.3F, 7.5F)))
+            add(TransformComponent(Vector2(3.3F, 10F)))
             val netCollide = world.createBody(BodyDef().apply {
                 type = BodyDef.BodyType.StaticBody
             })
@@ -193,7 +193,7 @@ class MyGdxGame : ApplicationAdapter() {
         })
         engine.addEntity(Entity().apply {
             add(TextureComponent(net2))
-            add(TransformComponent(Vector2(17F, 7.5F)))
+            add(TransformComponent(Vector2(27F, 10F)))
             val netBody = world.createBody(BodyDef().apply {
                 type = BodyDef.BodyType.StaticBody
             })
@@ -205,7 +205,7 @@ class MyGdxGame : ApplicationAdapter() {
             add(PhysicsComponent(netBody))
         })
         engine.addEntity(Entity().apply { //net1 3F, 7.5F net2 17F, 7.5F W: 0.46875 H: 2.34375
-            add(TransformComponent(Vector2(16.7F, 7.5F)))
+            add(TransformComponent(Vector2(26.7F, 10F)))
             val netCollide = world.createBody(BodyDef().apply {
                 type = BodyDef.BodyType.StaticBody
             })
@@ -244,7 +244,7 @@ class PhysicsSystem @Inject constructor(private val world: World) : EntitySystem
     private var accumulator = 0F
     private val controlArray: Array<Controller> = Controllers.getControllers()
     private val con1: Controller = controlArray[0]
-    private val con2: Controller = controlArray[0]
+    private val con2: Controller = controlArray[1]
     private var p1Score: Int = 0
     private var p2Score: Int = 0
     override fun update(deltaTime: Float) {
@@ -268,8 +268,8 @@ class PhysicsSystem @Inject constructor(private val world: World) : EntitySystem
             accumulator -= TIME_STEP
             playerB[0].applyForceToCenter(getDir(0),true)
             playerB[1].applyForceToCenter(getDir(1),true)
-            playerB[0].applyAngularImpulse(getTrigger(0), true)
-            playerB[1].applyAngularImpulse(getTrigger(1), true)
+            playerB[0].applyAngularImpulse(getDir2(0), true)
+            playerB[1].applyAngularImpulse(getDir2(1), true)
             if (playerB[0].angularVelocity > 5) playerB[0].angularVelocity = 5F
             else if (playerB[0].angularVelocity < -5) playerB[0].angularVelocity = -5F
             if (playerB[1].angularVelocity > 5) playerB[1].angularVelocity = 5F
@@ -301,22 +301,12 @@ class PhysicsSystem @Inject constructor(private val world: World) : EntitySystem
         return force
     }
 
-    fun getTrigger(player: Int) : Float {
+    fun getDir2(player: Int) : Float {
         var impulse: Float = 0F
         if (player == 0) {
-            if (con1.getAxis(2) != 0F) {
-                impulse = ((con1.getAxis(2) + 1) / 30)
-            }
-            if (con1.getAxis(5) != 0F) {
-                impulse += (-(con1.getAxis(5) + 1) / 30)
-            }
+            impulse = (-con1.getAxis(3) / 30F)
         } else {
-            if (con2.getAxis(2) != 0F) {
-                impulse = ((con2.getAxis(2) + 1) / 30)
-            }
-            if (con2.getAxis(5) != 0F) {
-                impulse += (-(con2.getAxis(5) + 1) / 30)
-            }
+            impulse = (-con2.getAxis(3) / 30F)
         }
         return impulse
     }
@@ -325,23 +315,32 @@ class PhysicsSystem @Inject constructor(private val world: World) : EntitySystem
         var speed = 0f
         var tourque: Float = 20f
         if (player == 0) { //360 * DEGTORAD 1 turn per second counter clockwise
-            if (con1.getButton(5)) {
-                tourque = 40f
+            if (con1.getAxis(2) != 0F) {
+                speed = (con1.getAxis(2) + 1) * 200 * MathUtils.degreesToRadians
             }
-            speed = -con1.getAxis(3) * 360 * MathUtils.degreesToRadians
+            if (con1.getAxis(5) != 0F) {
+                speed += -(con1.getAxis(5) + 1) * 200 * MathUtils.degreesToRadians
+            }
         } else {
-            if (con2.getButton(5)) {
-                tourque = 40f
+            if (con2.getButton(4)) {
+                speed = 200 * MathUtils.degreesToRadians
             }
-            speed = -con2.getAxis(3) * 360 * MathUtils.degreesToRadians
+            if (con2.getButton(5)) {
+                speed = -200 * MathUtils.degreesToRadians
+            }
         }
         return Vector2(speed, tourque)
     }
 
     fun reset() {
-        playerB[0].setTransform(8F, 7.5F, 0F)
-        playerB[1].setTransform(12F, 7.5F, 0F)
-        playerB[2].setTransform(10F, 7.5F, 0F)
+        var list = listOf<Float>(12F, 18F, 15F)
+        var i = 0
+        for (player in playerB) {
+            player.setTransform(list[i], 10F, 0F)
+            player.angularVelocity = 0F
+            player.linearVelocity = Vector2(0F, 0F)
+            i += 1
+        }
     }
 }
 
