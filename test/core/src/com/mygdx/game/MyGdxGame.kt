@@ -6,6 +6,7 @@ import com.badlogic.gdx.ApplicationAdapter
 import com.badlogic.gdx.Gdx
 import com.badlogic.gdx.controllers.Controller
 import com.badlogic.gdx.controllers.Controllers
+import com.badlogic.gdx.files.FileHandle
 import com.badlogic.gdx.graphics.GL20
 import com.badlogic.gdx.graphics.OrthographicCamera
 import com.badlogic.gdx.graphics.Texture
@@ -17,6 +18,9 @@ import com.badlogic.gdx.physics.box2d.joints.RevoluteJoint
 import com.badlogic.gdx.physics.box2d.joints.RevoluteJointDef
 import com.badlogic.gdx.utils.Array
 import com.google.inject.*
+import com.badlogic.gdx.graphics.g2d.BitmapFont
+
+
 
 //most included methods at this point is from youtube series.
 var playerB: MutableList<Body> = mutableListOf()
@@ -248,6 +252,7 @@ class PhysicsSystem @Inject constructor(private val world: World) : EntitySystem
     private var p1Score: Int = 0
     private var p2Score: Int = 0
     override fun update(deltaTime: Float) {
+        Gdx.graphics.setTitle("Player1 Score: " + p1Score + " Player2 Score: " + p2Score)
         val frameTime = Math.min(deltaTime, 0.25F)
         accumulator += frameTime
         while (accumulator >= TIME_STEP) {
@@ -256,12 +261,12 @@ class PhysicsSystem @Inject constructor(private val world: World) : EntitySystem
                 if ((contact.fixtureA.body.userData =="puck" || contact.fixtureB.body.userData == "puck")
                     && (contact.fixtureA.body.userData == "net1" || contact.fixtureB.body.userData == "net1")) {
                     p2Score += 1
-                    Gdx.app.log("P2 Scores", "P1: " + p1Score + " P2: " + p2Score)
+                    Gdx.graphics.setTitle("Player1 Score: " + p1Score + " Player2 Score: " + p2Score)
                     reset()
                 } else if ((contact.fixtureA.body.userData == "puck" || contact.fixtureB.body.userData == "puck")
                         && (contact.fixtureA.body.userData == "net2" || contact.fixtureB.body.userData == "net2")) {
                     p1Score += 1
-                    Gdx.app.log("P1 Scores", "P1: " + p1Score + " P2: " + p2Score)
+                    Gdx.graphics.setTitle("Player1 Score: " + p1Score + " Player2 Score: " + p2Score)
                     reset()
                 }
             }
@@ -289,7 +294,7 @@ class PhysicsSystem @Inject constructor(private val world: World) : EntitySystem
     }
 
     fun getDir(player: Int) : Vector2 {
-        var force: Vector2 = Vector2(0F,0F)
+        val force: Vector2 = Vector2(0F,0F)
         if (player == 0) {
             force.x = (con1.getAxis(0) * 6)
             force.y = (-con1.getAxis(1) * 6)
@@ -302,7 +307,7 @@ class PhysicsSystem @Inject constructor(private val world: World) : EntitySystem
     }
 
     fun getDir2(player: Int) : Float {
-        var impulse: Float = 0F
+        val impulse: Float
         if (player == 0) {
             impulse = (-con1.getAxis(3) / 30F)
         } else {
@@ -313,7 +318,7 @@ class PhysicsSystem @Inject constructor(private val world: World) : EntitySystem
 
     fun stickMove(player: Int) : Vector2 {
         var speed = 0f
-        var tourque: Float = 20f
+        val tourque: Float = 20f
         if (player == 0) { //360 * DEGTORAD 1 turn per second counter clockwise
             if (con1.getAxis(2) != 0F) {
                 speed = (con1.getAxis(2) + 1) * 200 * MathUtils.degreesToRadians
@@ -333,7 +338,7 @@ class PhysicsSystem @Inject constructor(private val world: World) : EntitySystem
     }
 
     fun reset() {
-        var list = listOf<Float>(12F, 18F, 15F)
+        val list = listOf(12F, 18F, 15F)
         var i = 0
         for (player in playerB) {
             player.setTransform(list[i], 10F, 0F)
