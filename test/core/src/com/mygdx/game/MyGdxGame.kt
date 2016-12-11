@@ -4,6 +4,8 @@ import com.badlogic.ashley.core.*
 import com.badlogic.ashley.systems.IteratingSystem
 import com.badlogic.gdx.ApplicationAdapter
 import com.badlogic.gdx.Gdx
+import com.badlogic.gdx.controllers.Controller
+import com.badlogic.gdx.controllers.Controllers
 import com.badlogic.gdx.graphics.GL20
 import com.badlogic.gdx.graphics.OrthographicCamera
 import com.badlogic.gdx.graphics.Texture
@@ -11,14 +13,23 @@ import com.badlogic.gdx.graphics.g2d.SpriteBatch
 import com.badlogic.gdx.math.MathUtils
 import com.badlogic.gdx.math.Vector2
 import com.badlogic.gdx.physics.box2d.*
+import com.badlogic.gdx.physics.box2d.joints.RevoluteJoint
+import com.badlogic.gdx.physics.box2d.joints.RevoluteJointDef
+import com.badlogic.gdx.utils.Array
 import com.google.inject.*
 
 //most included methods at this point is from youtube series.
+var playerB: MutableList<Body> = mutableListOf()
+var playerS: MutableList<RevoluteJoint> = mutableListOf()
+
 class MyGdxGame : ApplicationAdapter() {
     internal lateinit var batch: SpriteBatch
     internal lateinit var p1: Texture
     internal lateinit var p2: Texture
     internal lateinit var puck: Texture
+    internal lateinit var net1: Texture
+    internal lateinit var net2: Texture
+    internal lateinit var stick: Texture
     internal val engine = Engine()
     private lateinit var injector: Injector
 
@@ -28,6 +39,9 @@ class MyGdxGame : ApplicationAdapter() {
         p1 = Texture("player1.png")
         p2 = Texture("player2.png")
         puck = Texture("puck.png")
+        net1 = Texture("net1.png")
+        net2 = Texture("net2.png")
+        stick = Texture("stick.png")
         //injects the object into the game system
         injector  = Guice.createInjector(GameModule(this))
         injector.getInstance(Systems::class.java).list.map { injector.getInstance(it) }.forEach { system ->
@@ -43,6 +57,7 @@ class MyGdxGame : ApplicationAdapter() {
             val border = world.createBody(BodyDef().apply {
                 type = BodyDef.BodyType.StaticBody
             })
+            border.userData = "border"
             border.createFixture(EdgeShape().apply {
                 set(Vector2(0F, 0F), Vector2(20F, 0F))
             }, 1.0F)
@@ -58,7 +73,7 @@ class MyGdxGame : ApplicationAdapter() {
         })
         engine.addEntity(Entity().apply {
             add(TextureComponent(p1))
-            add(TransformComponent(Vector2(5F, 5F)))
+            add(TransformComponent(Vector2(8F, 7.5F)))
 
             val p1Body = world.createBody(BodyDef().apply {
                 type = BodyDef.BodyType.DynamicBody
@@ -66,39 +81,146 @@ class MyGdxGame : ApplicationAdapter() {
             p1Body.createFixture(PolygonShape().apply {
                 setAsBox(p1.width.pixelsToMeters / 2F, p1.height.pixelsToMeters / 2F)
             }, 2.0F)
+            p1Body.userData = "p1"
             p1Body.setTransform(transform.position, 0F)
             add(PhysicsComponent(p1Body))
-            p1Body.setLinearVelocity(5f, 5f)
+            playerB.add(p1Body)
+        })
+        engine.addEntity(Entity().apply {
+            add(TextureComponent(stick))
+            add(TransformComponent(Vector2(8F, 7.5F)))
+
+            val stickBody = world.createBody(BodyDef().apply {
+                type = BodyDef.BodyType.DynamicBody
+            })
+            stickBody.createFixture(PolygonShape().apply {
+                setAsBox(stick.width.pixelsToMeters / 2F, stick.height.pixelsToMeters / 2F)
+            }, 0.5F)
+            stickBody.userData = "p1 stick"
+            stickBody.setTransform(transform.position, 0F)
+            add(PhysicsComponent(stickBody))
+            val joint = world.createJoint(RevoluteJointDef().apply {
+                bodyA = playerB[0]
+                bodyB = stickBody
+                collideConnected = false
+                localAnchorA.set(Vector2(0f, 0f))
+                localAnchorB.set(Vector2(0f, -1f))
+                enableMotor = true
+                enableLimit = true
+                upperAngle = 45 * MathUtils.degreesToRadians
+                lowerAngle = -45 * MathUtils.degreesToRadians
+            }) as RevoluteJoint
+            playerS.add(joint)
         })
         engine.addEntity(Entity().apply {
             add(TextureComponent(p2))
-            add(TransformComponent(Vector2(9F, 5F)))
+            add(TransformComponent(Vector2(12F, 7.5F)))
             val p2Body = world.createBody(BodyDef().apply {
                 type = BodyDef.BodyType.DynamicBody
             })
             p2Body.createFixture(PolygonShape().apply {
                 setAsBox(p2.width.pixelsToMeters / 2F, p2.height.pixelsToMeters / 2F)
             }, 2.0F)
+            p2Body.userData = "p2"
             p2Body.setTransform(transform.position, 0F)
             add(PhysicsComponent(p2Body))
+            playerB.add(p2Body)
+        })
+        engine.addEntity(Entity().apply {
+            add(TextureComponent(stick))
+            add(TransformComponent(Vector2(12F, 7.5F)))
+
+            val stickBody = world.createBody(BodyDef().apply {
+                type = BodyDef.BodyType.DynamicBody
+            })
+            stickBody.createFixture(PolygonShape().apply {
+                setAsBox(stick.width.pixelsToMeters / 2F, stick.height.pixelsToMeters / 2F)
+            }, 0.5F)
+            stickBody.userData = "p2 stick"
+            stickBody.setTransform(transform.position, 0F)
+            add(PhysicsComponent(stickBody))
+            val joint = world.createJoint(RevoluteJointDef().apply {
+                bodyA = playerB[1]
+                bodyB = stickBody
+                collideConnected = false
+                localAnchorA.set(Vector2(0f, 0f))
+                localAnchorB.set(Vector2(0f, -1f))
+                enableMotor = true
+                enableLimit = true
+                upperAngle = 45 * MathUtils.degreesToRadians
+                lowerAngle = -45 * MathUtils.degreesToRadians
+            }) as RevoluteJoint
+            playerS.add(joint)
         })
         engine.addEntity(Entity().apply {
             add(TextureComponent(puck))
-            add(TransformComponent(Vector2(7F, 5F)))
+            add(TransformComponent(Vector2(10F, 7.5F)))
             val puckBody = world.createBody(BodyDef().apply {
                 type = BodyDef.BodyType.DynamicBody
             })
             puckBody.createFixture(CircleShape().apply {
                 setRadius(puck.width.pixelsToMeters / 2F)
             }, 1.0F)
+            puckBody.userData = "puck"
             puckBody.setTransform(transform.position, 0F)
             add(PhysicsComponent(puckBody))
+            playerB.add(puckBody)
+        })
+        engine.addEntity(Entity().apply {
+            add(TextureComponent(net1))
+            add(TransformComponent(Vector2(3F, 7.5F)))
+            val netBody = world.createBody(BodyDef().apply {
+                type = BodyDef.BodyType.StaticBody
+            })
+            netBody.createFixture(PolygonShape().apply {
+                setAsBox(net1.width.pixelsToMeters / 2F, net1.height.pixelsToMeters / 2F)
+            }, 0F)
+            netBody.userData = "net1 Visual"
+            netBody.setTransform(transform.position, 0F)
+            add(PhysicsComponent(netBody))
+        })
+        engine.addEntity(Entity().apply { //net1 3F, 7.5F net2 17F, 7.5F W: 0.46875 H: 2.34375
+            add(TransformComponent(Vector2(3.3F, 7.5F)))
+            val netCollide = world.createBody(BodyDef().apply {
+                type = BodyDef.BodyType.StaticBody
+            })
+            netCollide.createFixture(PolygonShape().apply {
+                setAsBox(net1.width.pixelsToMeters / 4F, net1.height.pixelsToMeters / 2.2F)
+            }, 0F)
+            netCollide.userData = "net1"
+            netCollide.setTransform(transform.position, 0F)
+            add(PhysicsComponent(netCollide))
+        })
+        engine.addEntity(Entity().apply {
+            add(TextureComponent(net2))
+            add(TransformComponent(Vector2(17F, 7.5F)))
+            val netBody = world.createBody(BodyDef().apply {
+                type = BodyDef.BodyType.StaticBody
+            })
+            netBody.createFixture(PolygonShape().apply {
+                setAsBox(net2.width.pixelsToMeters / 2F, net2.height.pixelsToMeters / 2F)
+            }, 0F)
+            netBody.userData = "net2 Visual"
+            netBody.setTransform(transform.position, 0F)
+            add(PhysicsComponent(netBody))
+        })
+        engine.addEntity(Entity().apply { //net1 3F, 7.5F net2 17F, 7.5F W: 0.46875 H: 2.34375
+            add(TransformComponent(Vector2(16.7F, 7.5F)))
+            val netCollide = world.createBody(BodyDef().apply {
+                type = BodyDef.BodyType.StaticBody
+            })
+            netCollide.createFixture(PolygonShape().apply {
+                setAsBox(net2.width.pixelsToMeters / 4F, net2.height.pixelsToMeters / 2.2F)
+            }, 0F)
+            netCollide.userData = "net2"
+            netCollide.setTransform(transform.position, 0F)
+            add(PhysicsComponent(netCollide))
         })
     }
 
     //renters the game graphics
     override fun render() {
-        Gdx.gl.glClearColor(1f, 0f, 0f, 1f)
+        Gdx.gl.glClearColor(1f, 1f, 1f, 1f)
         Gdx.gl.glClear(GL20.GL_COLOR_BUFFER_BIT)
         engine.update(Gdx.graphics.deltaTime)
     }
@@ -120,18 +242,106 @@ class PhysicsSynchronizationSystem : IteratingSystem(Family.all(TransformCompone
 
 class PhysicsSystem @Inject constructor(private val world: World) : EntitySystem() {
     private var accumulator = 0F
+    private val controlArray: Array<Controller> = Controllers.getControllers()
+    private val con1: Controller = controlArray[0]
+    private val con2: Controller = controlArray[0]
+    private var p1Score: Int = 0
+    private var p2Score: Int = 0
     override fun update(deltaTime: Float) {
         val frameTime = Math.min(deltaTime, 0.25F)
         accumulator += frameTime
         while (accumulator >= TIME_STEP) {
             world.step(TIME_STEP, VELOCITY_ITERATIONS, POSITION_ITERATIONS)
+            for (contact in world.contactList) { //ball mass: 0.69029135 net1: net2:
+                if ((contact.fixtureA.body.userData =="puck" || contact.fixtureB.body.userData == "puck")
+                    && (contact.fixtureA.body.userData == "net1" || contact.fixtureB.body.userData == "net1")) {
+                    p2Score += 1
+                    Gdx.app.log("P2 Scores", "P1: " + p1Score + " P2: " + p2Score)
+                    reset()
+                } else if ((contact.fixtureA.body.userData == "puck" || contact.fixtureB.body.userData == "puck")
+                        && (contact.fixtureA.body.userData == "net2" || contact.fixtureB.body.userData == "net2")) {
+                    p1Score += 1
+                    Gdx.app.log("P1 Scores", "P1: " + p1Score + " P2: " + p2Score)
+                    reset()
+                }
+            }
             accumulator -= TIME_STEP
+            playerB[0].applyForceToCenter(getDir(0),true)
+            playerB[1].applyForceToCenter(getDir(1),true)
+            playerB[0].applyAngularImpulse(getTrigger(0), true)
+            playerB[1].applyAngularImpulse(getTrigger(1), true)
+            if (playerB[0].angularVelocity > 5) playerB[0].angularVelocity = 5F
+            else if (playerB[0].angularVelocity < -5) playerB[0].angularVelocity = -5F
+            if (playerB[1].angularVelocity > 5) playerB[1].angularVelocity = 5F
+            else if (playerB[1].angularVelocity < -5) playerB[1].angularVelocity = -5F
+            var info = stickMove(0)
+            playerS[0].motorSpeed = info.x
+            playerS[0].maxMotorTorque = info.y
+            info = stickMove(1)
+            playerS[1].motorSpeed = info.x
+            playerS[1].maxMotorTorque = info.y
         }
     }
     companion object {
         private val TIME_STEP = 1.0F / 300F
         private val VELOCITY_ITERATIONS = 6
         private val POSITION_ITERATIONS = 2
+    }
+
+    fun getDir(player: Int) : Vector2 {
+        var force: Vector2 = Vector2(0F,0F)
+        if (player == 0) {
+            force.x = (con1.getAxis(0) * 6)
+            force.y = (-con1.getAxis(1) * 6)
+        } else {
+            force.x = (con2.getAxis(0) * 6)
+            force.y = (-con2.getAxis(1) * 6)
+        }
+        //Gdx.app.log("Pressed", con1.getAxis(3).toString())
+        return force
+    }
+
+    fun getTrigger(player: Int) : Float {
+        var impulse: Float = 0F
+        if (player == 0) {
+            if (con1.getAxis(2) != 0F) {
+                impulse = ((con1.getAxis(2) + 1) / 30)
+            }
+            if (con1.getAxis(5) != 0F) {
+                impulse += (-(con1.getAxis(5) + 1) / 30)
+            }
+        } else {
+            if (con2.getAxis(2) != 0F) {
+                impulse = ((con2.getAxis(2) + 1) / 30)
+            }
+            if (con2.getAxis(5) != 0F) {
+                impulse += (-(con2.getAxis(5) + 1) / 30)
+            }
+        }
+        return impulse
+    }
+
+    fun stickMove(player: Int) : Vector2 {
+        var speed = 0f
+        var tourque: Float = 20f
+        if (player == 0) { //360 * DEGTORAD 1 turn per second counter clockwise
+            if (con1.getButton(5)) {
+                tourque = 40f
+            }
+            speed = -con1.getAxis(3) * 360 * MathUtils.degreesToRadians
+        } else {
+            if (con2.getButton(5)) {
+                tourque = 40f
+            }
+            speed = -con2.getAxis(3) * 360 * MathUtils.degreesToRadians
+        }
+        return Vector2(speed, tourque)
+    }
+
+    fun reset() {
+        playerB[0].setTransform(8F, 7.5F, 0F)
+        playerB[1].setTransform(12F, 7.5F, 0F)
+        playerB[2].setTransform(10F, 7.5F, 0F)
     }
 }
 
@@ -190,8 +400,8 @@ class GameModule(private val myGdxGame: MyGdxGame) : Module {
         return Systems(listOf(
                 PhysicsSystem::class.java,
                 PhysicsSynchronizationSystem::class.java,
-                RenderingSystem::class.java,
-                PhysicsDebugSystem::class.java
+                RenderingSystem::class.java
+                //PhysicsDebugSystem::class.java //used for bug testing, visualized physics
         ))
     }
 
