@@ -6,7 +6,6 @@ import com.badlogic.gdx.ApplicationAdapter
 import com.badlogic.gdx.Gdx
 import com.badlogic.gdx.controllers.Controller
 import com.badlogic.gdx.controllers.Controllers
-import com.badlogic.gdx.files.FileHandle
 import com.badlogic.gdx.graphics.GL20
 import com.badlogic.gdx.graphics.OrthographicCamera
 import com.badlogic.gdx.graphics.Texture
@@ -18,11 +17,10 @@ import com.badlogic.gdx.physics.box2d.joints.RevoluteJoint
 import com.badlogic.gdx.physics.box2d.joints.RevoluteJointDef
 import com.badlogic.gdx.utils.Array
 import com.google.inject.*
-import com.badlogic.gdx.graphics.g2d.BitmapFont
 
 
-
-//most included methods at this point is from youtube series.
+//many base systems were designed from the following youtube series: https://www.youtube.com/watch?v=JY75pC5l0d0
+//actual game designed by Hunter Thompson
 var playerB: MutableList<Body> = mutableListOf()
 var playerS: MutableList<RevoluteJoint> = mutableListOf()
 
@@ -229,12 +227,14 @@ class MyGdxGame : ApplicationAdapter() {
         engine.update(Gdx.graphics.deltaTime)
     }
 
-    //delets graphics
+    //deletes graphics
     override fun dispose() {
         batch.dispose()
         p1.dispose()
         p2.dispose()
         puck.dispose()
+        net1.dispose()
+        net2.dispose()
     }
 }
 
@@ -252,7 +252,7 @@ class PhysicsSystem @Inject constructor(private val world: World) : EntitySystem
     private var p1Score: Int = 0
     private var p2Score: Int = 0
     override fun update(deltaTime: Float) {
-        Gdx.graphics.setTitle("Player1 Score: " + p1Score + " Player2 Score: " + p2Score)
+        Gdx.graphics.setTitle("Blue Score: " + p1Score + " Yellow Score: " + p2Score)
         val frameTime = Math.min(deltaTime, 0.25F)
         accumulator += frameTime
         while (accumulator >= TIME_STEP) {
@@ -261,12 +261,12 @@ class PhysicsSystem @Inject constructor(private val world: World) : EntitySystem
                 if ((contact.fixtureA.body.userData =="puck" || contact.fixtureB.body.userData == "puck")
                     && (contact.fixtureA.body.userData == "net1" || contact.fixtureB.body.userData == "net1")) {
                     p2Score += 1
-                    Gdx.graphics.setTitle("Player1 Score: " + p1Score + " Player2 Score: " + p2Score)
+                    Gdx.graphics.setTitle("Blue Score: " + p1Score + " Yellow Score: " + p2Score)
                     reset()
                 } else if ((contact.fixtureA.body.userData == "puck" || contact.fixtureB.body.userData == "puck")
                         && (contact.fixtureA.body.userData == "net2" || contact.fixtureB.body.userData == "net2")) {
                     p1Score += 1
-                    Gdx.graphics.setTitle("Player1 Score: " + p1Score + " Player2 Score: " + p2Score)
+                    Gdx.graphics.setTitle("Blue Score: " + p1Score + " Yellow Score: " + p2Score)
                     reset()
                 }
             }
@@ -346,6 +346,8 @@ class PhysicsSystem @Inject constructor(private val world: World) : EntitySystem
             player.linearVelocity = Vector2(0F, 0F)
             i += 1
         }
+        playerS[0].bodyB.setTransform(12F, 10F, 0F)
+        playerS[1].bodyB.setTransform(18F, 10F, 0F)
     }
 }
 
